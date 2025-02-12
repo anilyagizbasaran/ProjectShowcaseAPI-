@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Proje API Test</title>
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input {
+            margin: 5px;
+            padding: 5px;
+            width: 100%;
+        }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Proje API Test Paneli</h2>
+
+        <div class="form-group">
+            <h3>Yeni Proje Ekle</h3>
+            <input type="text" id="projectTitle" placeholder="Proje Başlığı">
+            <input type="text" id="projectDescription" placeholder="Açıklama">
+            <input type="text" id="projectImageUrl" placeholder="Resim URL">
+            <input type="text" id="projectGithubUrl" placeholder="Github URL">
+            <input type="text" id="projectTechnologies" placeholder="Technologies">
+            <button onclick="createProject()">Proje Ekle</button>
+        </div>
+
+        <div class="form-group">
+            <h3>Tüm Projeleri Listele</h3>
+            <button onclick="getAllProjects()">Projeleri Getir</button>
+        </div>
+
+        <div class="form-group">
+            <h3>Proje Sil</h3>
+            <input type="number" id="deleteId" placeholder="Proje ID">
+            <button onclick="deleteProject()">Projeyi Sil</button>
+        </div>
+
+        <div class="form-group">
+            <h3>Teknoloji Sayıları</h3>
+            <button onclick="getTechnologyCounts()">Teknoloji Sayılarını Getir</button>
+            <table id="technologyTable">
+                <thead>
+                    <tr>
+                        <th>Teknoloji</th>
+                        <th>Adet</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const apiUrl = '/api/projects';
+
+        async function createProject() {
+            const project = {
+                title: document.getElementById('projectTitle').value,
+                description: document.getElementById('projectDescription').value,
+                imageUrl: document.getElementById('projectImageUrl').value,
+                githubUrl: document.getElementById('projectGithubUrl').value,
+                technologies: document.getElementById('projectTechnologies').value,
+                createdDate: new Date().toISOString(),
+                status: true
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(project)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(JSON.stringify(errorData.errors, null, 2));
+                }
+
+                const result = await response.text();
+                document.getElementById('result').innerText = result;
+            } catch (error) {
+                document.getElementById('result').innerText = 'Hata: ' + error;
+            }
+        }
+
+        async function getAllProjects() {
+            try {
+                const response = await fetch(apiUrl);
+                const projects = await response.json();
+                document.getElementById('result').innerText = JSON.stringify(projects, null, 2);
+            } catch (error) {
+                document.getElementById('result').innerText = 'Hata: ' + error;
+            }
+        }
+
+        async function deleteProject() {
+            const id = document.getElementById('deleteId').value;
+            try {
+                const response = await fetch(`${apiUrl}/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.text();
+                document.getElementById('result').innerText = result;
+            } catch (error) {
+                document.getElementById('result').innerText = 'Hata: ' + error;
+            }
+        }
+
+        async function getTechnologyCounts() {
+            try {
+                const response = await fetch(`${apiUrl}/technology-counts`);
+                const data = await response.json();
+
+                const tableBody = document.querySelector("#technologyTable tbody");
+                tableBody.innerHTML = "";
+
+                for (const [tech, count] of Object.entries(data)) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${tech}</td><td>${count}</td>`;
+                    tableBody.appendChild(row);
+                }
+            } catch (error) {
+                document.getElementById('result').innerText = 'Hata: ' + error;
+            }
+        }
+    </script>
+</body>
+</html>
